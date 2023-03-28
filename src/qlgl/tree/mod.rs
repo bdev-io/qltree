@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use super::{ IndexTrait, ValueTrait };
 use crate::fm::roots::RootFile;
 

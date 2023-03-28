@@ -6,22 +6,7 @@
     clippy::module_name_repetitions,
 )]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+use std::path::PathBuf;
 
 
 // -- lib.rs --
@@ -33,24 +18,24 @@ mod qlgl;
 
 
 
+#[allow(dead_code)]
+fn sync_test() -> Result<(), Box<dyn std::error::Error>> {
+  let path = PathBuf::from("/tmp/test");
+  let _tree = qlgl::Config
+    ::new(path, 3)
+    .build::<i64, i64>();
 
+  Ok(())
+}
 
-
-#[cfg(test)]
+#[cfg(all(test, feature = "sync"))]
 mod tests {
   use super::*;
-  use std::path::PathBuf;
-  use qlgl::Config;
 
   #[test]
   fn it_works() {
-    let path = PathBuf::from("/tmp/test");
-    let tree = Config
-      ::new(path, 3)
-      .build::<i64, i64>();
-
-    assert!(true);
+    assert!(sync_test().is_ok());
   }
 }
 
-
+// #[cfg(all(test, feature = "async"))]

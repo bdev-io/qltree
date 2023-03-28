@@ -35,7 +35,7 @@ impl Config {
   }
 
   // TODO : Load Configure from dir_path
-  pub fn load(dir_path: PathBuf) -> Self {
+  pub fn load(_dir_path: PathBuf) -> Self {
     todo!("Load Configure from dir Path")
   }
 
@@ -44,7 +44,7 @@ impl Config {
   }
 
   // TODO : Set Key Size
-  pub fn set_key_size(&mut self, key_size: usize) {
+  pub fn set_key_size(&mut self, _key_size: usize) {
     todo!("Set Key Size")
   }
 }
