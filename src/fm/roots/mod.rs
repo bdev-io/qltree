@@ -23,6 +23,7 @@ pub struct RootFile<I, V> where I: IndexTrait, V: ValueTrait {
 // NOTE : SYNC로 구현된 모듈
 #[cfg(feature = "sync")]
 mod sync;
+
 // NOTE : ASYNC로 구현된 모듈
 #[cfg(featue = "async")]
 mod r#async;
