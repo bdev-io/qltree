@@ -12,13 +12,8 @@
 
 
 
-
-
-
-
 // -- lib.rs --
 
-mod tree;
 mod fm;
 mod qlgl;
 
@@ -29,18 +24,21 @@ mod qlgl;
 
 
 
-// #[cfg(test)]
-// mod tests {
-//   use super::*;
-//   use crate::tree::Tree;
-//   use std::path::PathBuf;
-//
-//   #[tokio::test]
-//   async fn it_works() {
-//     // let path = PathBuf::from("test");
-//     // let tree = Tree::new(path);
-//     assert!(true);
-//   }
-// }
-//
-//
+#[cfg(test)]
+mod tests {
+  use super::*;
+  use std::path::PathBuf;
+  use qlgl::Config;
+
+  #[test]
+  fn it_works() {
+    let path = PathBuf::from("/tmp/test");
+    let tree = Config
+      ::new(path, 3)
+      .build::<i64, i64>();
+
+    assert!(true);
+  }
+}
+
+

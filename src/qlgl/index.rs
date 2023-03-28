@@ -7,7 +7,7 @@ pub trait IndexTrait: Debug + Send + Sync {
 }
 
 
-impl Index for i64 {
+impl IndexTrait for i64 {
   fn get_size(&self) -> u64 {
     8
   }
