@@ -21,9 +21,17 @@ mod qlgl;
 #[allow(dead_code)]
 fn sync_test() -> Result<(), Box<dyn std::error::Error>> {
   let path = PathBuf::from("/tmp/test");
-  let _tree = qlgl::Config
-    ::new(path, 3)
-    .build::<i64, i64>();
+
+  let config = qlgl::Config::new(path, 3);
+  let mut tree = config.build::<i64, i64>();
+  
+  tree.open()?;
+  tree.insert(1, 2)?;
+  tree.insert(2, 3)?;
+  tree.insert(3, 4)?;
+  tree.update(1, 4)?;
+  tree.delete(1)?;
+  tree.insert(1, 2)?;
 
   Ok(())
 }
@@ -39,3 +47,4 @@ mod tests {
 }
 
 // #[cfg(all(test, feature = "async"))]
+

@@ -3,12 +3,12 @@ use std::fmt::Debug;
 pub trait IndexTrait: Debug + Send + Sync {
 
   fn to_bytes(&self) -> Vec<u8>;         // 인덱스를 바이트로 변환
-  fn get_size(&self) -> u64;             // 인덱스의 크기를 반환
+  fn get_size() -> u64;             // 인덱스의 크기를 반환
 }
 
 
 impl IndexTrait for i64 {
-  fn get_size(&self) -> u64 {
+  fn get_size() -> u64 {
     8
   }
 
