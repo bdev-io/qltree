@@ -1,0 +1,42 @@
+﻿syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+package UpbitNet;
+
+option csharp_namespace = "Shared.Network.Upbit";
+
+message UpbitOrderbookUnit {
+	double askPrice = 1;
+	double bidPrice = 2;
+	double askSize = 3;
+	double bidSize = 4;
+}
+
+message UpbitOrderbookChunk {
+	string code = 1;
+	fixed64 timestamp = 2;
+	double totalAskSize = 3;
+	double totalBidSize = 4;
+	repeated UpbitOrderbookUnit units = 5;
+}
+
+message UpbitTradeChunk {
+	string code = 1;
+	fixed64 timestamp = 2;
+	google.protobuf.Timestamp date = 3;
+	fixed64 tradeTimestamp = 4;
+	fixed64 price = 5;
+	double volume = 6;
+	string askBid = 7;
+	double prevClosingPrice = 8;
+	string change = 9;
+	double changePrice = 10;
+	fixed64 sequential_id = 11;
+}
+
+service UpbitNet {
+	rpc SendOrderbook(UpbitOrderbookChunk) returns (google.protobuf.Empty);
+	rpc SendTrade(UpbitTradeChunk) returns (google.protobuf.Empty);
+}

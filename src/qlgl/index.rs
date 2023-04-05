@@ -17,6 +17,5 @@ impl IndexTrait for i64 {
     bytes.extend_from_slice(&self.to_le_bytes());
     bytes
   }
-
 }
 

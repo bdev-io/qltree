@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Shared.Network.Xing";
+
+package XingNet;
+
+enum UpDownStatus
+{
+	UP_DOWN_STATUS_UPPER_LIMIT = 0;
+	UP_DOWN_STATUS_UP = 1;
+	UP_DOWN_STATUS_FLATTEN = 2;
+	UP_DOWN_STATUS_LOWER_LIMIT = 3;
+	UP_DOWN_STATUS_DOWN = 4;
+}
+
+message MinuteTick
+{
+	google.protobuf.Timestamp time = 1; // ��¥+�ð�
+	string code = 2;
+	sfixed64 open = 3;
+	sfixed64 high = 4;
+	sfixed64 low = 5;
+	sfixed64 close = 6;
+	sfixed64 volume = 7;
+	sfixed64 value = 8;
+	uint64 modified = 9;
+	double rate = 10;
+	UpDownStatus sign = 11;
+}
+
+service XingMinuteNet {
+	rpc Communicate (MinuteTick) returns (google.protobuf.Empty);
+}

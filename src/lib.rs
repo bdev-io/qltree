@@ -5,6 +5,7 @@
     clippy::option_if_let_else,
     clippy::module_name_repetitions,
 )]
+#[macro_use] extern crate log;
 
 use std::path::PathBuf;
 

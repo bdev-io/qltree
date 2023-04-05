@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+package Binance;
+
+option csharp_namespace = "Shared.Network.Binance";
+
+message AggTrade {
+	string eventType = 1;
+	google.protobuf.Timestamp eventTime = 2;
+	string symbol = 3;
+	fixed64 aggregateId = 4;
+	double price = 5;
+	double quantity = 6;
+	fixed64 firstTradeId = 7;
+	fixed64 lastTradeId = 8;
+	google.protobuf.Timestamp tradeTime = 9;
+	bool isBuyerMaker = 10;
+	bool isIgnore = 11;
+}
+
+message BookTicker
+{
+	fixed64 updateId = 1;
+	string symbol = 2;
+	double bestBidPrice = 3;
+	double bestBidQuantity = 4;
+	double bestAskPrice = 5;
+	double bestAskQty = 6;
+}
+
+service BinanceReal {
+	rpc CommunicateTrade(AggTrade) returns (google.protobuf.Empty);
+	rpc CommunicateTicker(BookTicker) returns (google.protobuf.Empty);
+}

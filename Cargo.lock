@@ -412,6 +412,7 @@ dependencies = [
  "byteorder",
  "crc",
  "flume",
+ "log",
  "lru",
  "nanorand",
  "num_cpus",
