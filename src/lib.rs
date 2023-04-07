@@ -12,8 +12,10 @@ use std::path::PathBuf;
 
 // -- lib.rs --
 
-mod fm;
 mod qlgl;
+
+pub use qlgl::*;
+
 
 // -- lib.rs --
 
@@ -23,16 +25,17 @@ mod qlgl;
 fn sync_test() -> Result<(), Box<dyn std::error::Error>> {
   let path = PathBuf::from("/tmp/test");
 
-  let config = qlgl::Config::new(path, 3);
-  let mut tree = config.build::<i64, i64>();
-  
-  tree.open()?;
-  tree.insert(1, 2)?;
-  tree.insert(2, 3)?;
-  tree.insert(3, 4)?;
-  tree.update(1, 4)?;
-  tree.delete(1)?;
-  tree.insert(1, 2)?;
+  // let config = qlgl::Config::new(path, 3);
+  // let mut tree = config.build::<i64, i64>();
+  // 
+  // tree.open()?;
+  // tree.set_params(Some(1_i64), Some("test"), Some(3));
+  // tree.insert(1, 2)?;
+  // tree.insert(2, 3)?;
+  // tree.insert(3, 4)?;
+  // tree.update(1, 4)?;
+  // tree.delete(1)?;
+  // tree.insert(1, 2)?;
 
   Ok(())
 }
