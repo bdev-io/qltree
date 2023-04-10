@@ -29,6 +29,7 @@ arc-bytes = "0.3.5"
 tokio = { version = "1.14.0", features = ["full"] }
 tokio-util = "0.6.9"
 log = "*"
+lazy_static = "1"
 
 [dev-dependencies]
 nanorand = "0.7.0"
