@@ -104,7 +104,7 @@ impl<I: IndexTrait, V: ValueTrait> Tree<I, V> {
       }
 
       if data_path.exists() {
-        let mut data_file = OpenOptions::new().write(true).read(true).append(true).open(data_path).unwrap();
+        let data_file = OpenOptions::new().write(true).read(true).append(true).open(data_path).unwrap();
         self.data_file = Some(Arc::new(data_file));
       } else {
         let data_file = OpenOptions::new().write(true).read(true).create(true).open(data_path).unwrap();

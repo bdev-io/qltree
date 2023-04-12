@@ -241,17 +241,14 @@ impl<I: IndexTrait, V:ValueTrait> Node<I, V> {
   }
 
   pub fn insert_non_full(&mut self, file: &mut File, key: I, value: V) -> Result<()> {
-    todo!("꽉 차있지 않아서 분할이 필요없음");
+    // todo!("꽉 차있지 않아서 분할이 필요없음");
+
+
     Ok(())
   }
 
   pub fn insert(&mut self, file: &mut File, key: I, value: V) -> Result<()> {
-    if self.is_full() {
-      self.insert_full(file, key, value)?;
-    } else {
-      self.insert_non_full(file, key, value)?;
-    }
-    Ok(())
+    todo!("1. ")
   }
 
 }
