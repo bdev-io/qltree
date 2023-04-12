@@ -10,18 +10,18 @@ use super::nodes::Node;
 
 
 pub struct Tree<I: IndexTrait, V: ValueTrait> {
-  base_path: PathBuf,             // TYPE : 트리의 기본 경로
-  node_name: String,              // TYPE : 트리의 이름
+  base_path: PathBuf,                         // TYPE : 트리의 기본 경로
+  node_name: String,                          // TYPE : 트리의 이름
 
-  is_initialized: bool,           // TYPE : 트리가 초기화 되었는지 여부(open?)
+  is_initialized: bool,                       // TYPE : 트리가 초기화 되었는지 여부(open?)
 
-  degree: usize,                  // TYPE : 트리의 차수 ( 짝수, I,V 개수는 degree-1, C 개수는 degree)
+  degree: usize,                              // TYPE : 트리의 최대 차수 (최소차수 * 2 - 1), 홀수임
   root: Arc<Mutex<Node<I, V>>>,               // TYPE : 트리의 루트 노드
 
-  node_file: Option<Arc<File>>,        // TYPE : 노드 파일
-  data_file: Option<Arc<File>>,
+  node_file: Option<Arc<File>>,               // TYPE : 노드 파일
+  data_file: Option<Arc<File>>,               // TYPE : 데이터 파일
 
-  phantom: PhantomData<(I, V)>,  // TYPE : 트리의 인덱스와 값의 타입을 저장
+  phantom: PhantomData<(I, V)>,               // TYPE : 트리의 인덱스와 값의 타입을 저장
 }
 
 impl<I: IndexTrait, V: ValueTrait> Drop for Tree<I, V> {
@@ -63,14 +63,14 @@ impl<I: IndexTrait, V:ValueTrait> Default for Tree<I, V> {
 impl<I: IndexTrait, V: ValueTrait> Tree<I, V> {
   pub fn new(base_path: PathBuf, node_name: &str, degree: usize) -> Self {
 
-    assert!(degree % 2 == 0, "Degree must be even number");
-
-    let root = Node::<I, V>::make_leaf(degree, None, None);
+    let mut root = Node::<I, V>::make_leaf(degree, None, None);
+    root.set_root();
+    root.set_dirty();
 
     Self {
       base_path,
       node_name: node_name.to_string(),
-      degree,
+      degree: degree * 2 - 1,
       root: Arc::new(Mutex::new(root)),
       phantom: PhantomData,
       node_file: None,
@@ -91,6 +91,7 @@ impl<I: IndexTrait, V: ValueTrait> Tree<I, V> {
   pub fn open(&mut self) {
     let node_path = self.base_path.join(format!("{}.ql", self.node_name));
     let data_path = self.base_path.join(format!("{}.gl", self.node_name));
+
     if self.node_file.is_none() {
       if node_path.exists() {
         let node_file = OpenOptions::new().write(true).read(true).append(true).open(node_path).unwrap();
@@ -129,7 +130,7 @@ impl<I: IndexTrait, V: ValueTrait> Tree<I, V> {
 
 // NOTE : 트리의 추가 / 삭제 / 변경등의 메소드
 impl<I: IndexTrait, V: ValueTrait> Tree<I, V> {
-    pub fn insert(&mut self, key: I, value: V) -> Result<(), std::io::Error> {
+  pub fn insert(&mut self, key: I, value: V) -> Result<(), std::io::Error> {
     if !self.is_initialized {
       self.open();
     }
@@ -143,9 +144,9 @@ impl<I: IndexTrait, V: ValueTrait> Tree<I, V> {
     }
   }
 
-  pub fn search(&self, key: I) -> Option<V> {
-    None
-  }
+  // pub fn search(&self, key: I) -> Option<V> {
+  //   None
+  // }
 }
 // NOTE : 트리의 추가 / 삭제 / 변경등의 메소드
 

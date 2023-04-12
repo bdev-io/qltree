@@ -26,6 +26,38 @@ pub struct Node<I: IndexTrait, V: ValueTrait> {
   pub phantom: std::marker::PhantomData<(I, V)>,
 }
 
+impl<I: IndexTrait, V: ValueTrait> AsRef<Node<I, V>> for Node<I, V> {
+  fn as_ref(&self) -> &Self {
+    self
+  }
+}
+
+impl<I: IndexTrait, V: ValueTrait> AsMut<Node<I, V>> for Node<I, V> {
+  fn as_mut(&mut self) -> &mut Self {
+    self
+  }
+}
+
+impl<I: IndexTrait, V: ValueTrait> Clone for Node<I, V> {
+  fn clone(&self) -> Self {
+    Self {
+      node_type: self.node_type,
+      is_root: self.is_root,
+      is_dirty: self.is_dirty,
+      is_overflow: self.is_overflow,
+
+      parent_offset: self.parent_offset,
+      offset: self.offset,
+
+      keys: self.keys.clone(),
+      values: self.values.clone(),
+      children: self.children.clone(),
+
+      phantom: std::marker::PhantomData,
+    }
+  }
+}
+
 impl<I: IndexTrait, V: ValueTrait> Default for Node<I, V> {
   fn default() -> Self {
     Self {
@@ -96,6 +128,15 @@ impl<I: IndexTrait, V: ValueTrait> Node<I, V> {
       values: Vec::with_capacity(degree - 1),
       children: Vec::with_capacity(0),
       phantom: std::marker::PhantomData,
+    }
+  }
+
+  pub fn read_from_file(node_file: &File, offset: u64) -> Self {
+    // TODO : 파일에서 특정 부분을 읽어서 노드를 생성해주어야함.
+
+    Self {
+      node_type: NodeType::Leaf(None, None),
+      ..Default::default()
     }
   }
 
@@ -223,6 +264,7 @@ impl<I: IndexTrait, V:ValueTrait> Node<I, V> {
   } // NOTE : NODE_FILE OR DATA_FILE
 
 
+
 }
 // NOTE : 노드의 파일 입출력에 대한 정의
 
@@ -242,13 +284,39 @@ impl<I: IndexTrait, V:ValueTrait> Node<I, V> {
 
   pub fn insert_non_full(&mut self, file: &mut File, key: I, value: V) -> Result<()> {
     // todo!("꽉 차있지 않아서 분할이 필요없음");
-
-
     Ok(())
   }
 
+  pub fn insert_search_node(&mut self, file: &mut File, key: I) -> Result<Box<Node<I, V>>> {
+    if matches!(self.node_type, NodeType::Leaf(_, _)) {
+      return Ok(Box::new(self.clone()));
+    }
+
+    if matches!(self.node_type, NodeType::Internal) {
+      let mut index = 0;
+      for i in 0..self.keys.len() {
+        if key < self.keys[i] {
+          index = i;
+          break;
+        }
+      }
+      let child_offset = self.children[index];
+
+      let mut child_node: Node<I, V> = Node::read_from_file(file, child_offset);
+      let recursive_result = child_node.insert_search_node(file, key)?;
+      Ok(recursive_result)
+    } else {
+      Err(std::io::Error::new(std::io::ErrorKind::Other, "Invalid Node Type").into())
+    }
+  }
+
   pub fn insert(&mut self, file: &mut File, key: I, value: V) -> Result<()> {
-    todo!("1. ")
+    if self.is_root {
+      let insert_node: Box<Node<I, V>> = self.insert_search_node(file, key)?;
+    }
+
+    todo!("노드에 키와 값 삽입.");
+    Ok(())
   }
 
 }

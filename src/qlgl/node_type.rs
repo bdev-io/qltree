@@ -1,6 +1,7 @@
 type PrevLeafOffset = Option<u64>;
 type NextLeafOffset = Option<u64>;
 
+#[derive(Debug, Clone, Copy)]
 pub enum NodeType{
   Internal,
   Leaf(PrevLeafOffset, NextLeafOffset),

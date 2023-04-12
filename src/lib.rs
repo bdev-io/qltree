@@ -6,6 +6,7 @@
     clippy::module_name_repetitions,
 )]
 #[macro_use] extern crate log;
+#[macro_use] extern crate pin_project;
 
 use std::path::PathBuf;
 
