@@ -15,10 +15,11 @@ pub struct Tree<I: IndexTrait, V: ValueTrait> {
 
   is_initialized: bool,           // TYPE : 트리가 초기화 되었는지 여부(open?)
 
-  degree: usize,                  // TYPE : 트리의 차수 ( 홀수여야함, I,V 개수는 degree-1, C 개수는 degree)
+  degree: usize,                  // TYPE : 트리의 차수 ( 짝수, I,V 개수는 degree-1, C 개수는 degree)
   root: Arc<Mutex<Node<I, V>>>,               // TYPE : 트리의 루트 노드
 
-  file: Option<Arc<File>>,        // TYPE : 노드 파일
+  node_file: Option<Arc<File>>,        // TYPE : 노드 파일
+  data_file: Option<Arc<File>>,
 
   phantom: PhantomData<(I, V)>,  // TYPE : 트리의 인덱스와 값의 타입을 저장
 }
@@ -26,14 +27,34 @@ pub struct Tree<I: IndexTrait, V: ValueTrait> {
 impl<I: IndexTrait, V: ValueTrait> Drop for Tree<I, V> {
   fn drop(&mut self) {
     self.is_initialized = false;
-    if let Some(f) = &self.file {
+    if let Some(f) = &self.node_file {
       f.sync_all().unwrap();
     }
-    self.file = None;
+    if let Some(f) = &self.data_file {
+      f.sync_all().unwrap();
+    }
+    self.node_file = None;
+    self.data_file = None;
   }
 }
 
+impl<I: IndexTrait, V:ValueTrait> Default for Tree<I, V> {
+  fn default() -> Self {
+    Self {
+      base_path: PathBuf::new(),
+      node_name: String::new(),
 
+      is_initialized: false,
+      degree: 0,
+      root: Arc::new(Mutex::new(Node::<I, V>::default())),
+
+      node_file: None,
+      data_file: None,
+
+      phantom: PhantomData,
+    }
+  }
+}
 
 
 
@@ -42,51 +63,67 @@ impl<I: IndexTrait, V: ValueTrait> Drop for Tree<I, V> {
 impl<I: IndexTrait, V: ValueTrait> Tree<I, V> {
   pub fn new(base_path: PathBuf, node_name: &str, degree: usize) -> Self {
 
-    assert!(degree % 2 == 1, "Degree must be odd number");
+    assert!(degree % 2 == 0, "Degree must be even number");
 
-    let root = Node::<I, V>::make_root(degree);
+    let root = Node::<I, V>::make_leaf(degree, None, None);
 
     Self {
       base_path,
       node_name: node_name.to_string(),
-
-      is_initialized: false,
       degree,
       root: Arc::new(Mutex::new(root)),
-
-      file: None,
-
       phantom: PhantomData,
+      node_file: None,
+      data_file: None,
+      ..Default::default()
+    }
+  }
 
+  fn sync(&self) {
+    if let Some(f) = &self.node_file {
+      f.sync_all().unwrap();
+    }
+    if let Some(f) = &self.data_file {
+      f.sync_all().unwrap();
     }
   }
 
   pub fn open(&mut self) {
-    let file_path = self.base_path.join(format!("{}.ql", self.node_name));
-    if self.file.is_none() {
-      if file_path.exists() {
-        debug!("FILE Exists.");
-        let mut file = OpenOptions::new().write(true).read(true).append(true).open(file_path).unwrap();
-        let mut root = self.root.lock().unwrap();
-        root.read(&mut file, 0_u64).unwrap();
-        // debug!("File Read, root: {:#?}", root.keys);
-
-        self.file = Some(Arc::new(file));
+    let node_path = self.base_path.join(format!("{}.ql", self.node_name));
+    let data_path = self.base_path.join(format!("{}.gl", self.node_name));
+    if self.node_file.is_none() {
+      if node_path.exists() {
+        let node_file = OpenOptions::new().write(true).read(true).append(true).open(node_path).unwrap();
+        let root = self.root.lock().unwrap();
+        // root.read_from_file(&mut node_file, 0_u64).unwrap();
+        self.node_file = Some(Arc::new(node_file));
       } else {
         debug!("File Not Exists, Crate New One");
-        let file = OpenOptions::new().write(true).read(true).create(true).open(file_path).unwrap();
-        self.file = Some(Arc::new(file));
+        let node_file = OpenOptions::new().write(true).read(true).create(true).open(node_path).unwrap();
+        self.node_file = Some(Arc::new(node_file));
+      }
+
+      if data_path.exists() {
+        let mut data_file = OpenOptions::new().write(true).read(true).append(true).open(data_path).unwrap();
+        self.data_file = Some(Arc::new(data_file));
+      } else {
+        let data_file = OpenOptions::new().write(true).read(true).create(true).open(data_path).unwrap();
+        self.data_file = Some(Arc::new(data_file));
       }
     }
 
     self.is_initialized = true;
   }
 
-  pub fn get_file(&self) -> Arc<File> {
-    self.file.as_ref().unwrap().clone()
+  pub fn get_node_file(&self) -> Arc<File> {
+    self.node_file.as_ref().unwrap().clone()
   }
 
+  pub fn get_data_file(&self) -> Arc<File> {
+    self.node_file.as_ref().unwrap().clone()
+  }
 }
+
 // NOTE : 트리의 파일입출력및 기본 메소드
 
 
@@ -97,9 +134,9 @@ impl<I: IndexTrait, V: ValueTrait> Tree<I, V> {
       self.open();
     }
 
-    let mut file = self.get_file().try_clone().unwrap();
+    let mut node_file = self.get_node_file().try_clone().unwrap();
 
-    if self.root.lock().unwrap().insert(&mut file, key, value).is_ok() {
+    if self.root.lock().unwrap().insert(&mut node_file, key, value).is_ok() {
       Ok(())
     } else {
       Err(std::io::Error::new(std::io::ErrorKind::Other, "Insert failed"))

@@ -2,12 +2,12 @@ use std::fmt::Debug;
 
 pub trait ValueTrait: Debug + Send + Sync + Clone + Copy + Default {
   fn to_bytes(&self) -> Vec<u8>;         // 값을 바이트로 변환
-  fn get_size() -> u64;             // 값의 크기를 반환
+  fn get_size() -> usize;             // 값의 크기를 반환
   fn from_bytes(bytes: &[u8]) -> Self; // 바이트를 값으로 변환
 }
 
 impl ValueTrait for i64 {
-  fn get_size() -> u64 {
+  fn get_size() -> usize {
     8
   }
 
