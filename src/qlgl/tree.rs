@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 use std::fs::{ File, OpenOptions };
+use std::io::Read;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::{ Arc, Mutex };
@@ -21,7 +22,7 @@ impl<I: Index, V: Value> Tree<I,V> {
 
     let file_path = base_path.join("tree.ql");
 
-    let node_file = if !file_path.exists() {
+    let mut node_file = if !file_path.exists() {
       let mut node_file = OpenOptions::new()
         .read(true)
         .write(true)
@@ -49,6 +50,13 @@ impl<I: Index, V: Value> Tree<I,V> {
 
     let mut root = Node::<I, V>::new();
     root.set_offset(0);
+
+    let mut bufs: Vec<u8> = vec![0; Node::<I, V>::get_byte_size()];
+    node_file.read_exact(&mut bufs).unwrap();
+
+    root.from_bytes(bufs).unwrap();
+
+
     Self {
       node_name: node_name.to_string(),
       root: Arc::new(Mutex::new(root)),
