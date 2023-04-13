@@ -38,6 +38,9 @@ impl<I: Index, V: Value> Node<I, V> {
     self.offset = offset;
   }
 
+  pub fn increase_count(&mut self) {
+    self.used_count += 1;
+  }
   pub fn set_used_count(&mut self, count: usize) {
     self.used_count = count;
   }
@@ -46,8 +49,13 @@ impl<I: Index, V: Value> Node<I, V> {
     self.is_dirty = true;
   }
 
+  pub fn set_clean(&mut self) {
+    self.is_dirty = false;
+  }
+
   pub fn set_overflow(&mut self) {
-    self.is_overflow = true;
+    self.set_dirty();
+    self.is_overflow = self.used_count >= DEGREE - 1 || self.is_overflow;
   }
 
   pub fn is_root(&self) -> bool {
@@ -59,7 +67,7 @@ impl<I: Index, V: Value> Node<I, V> {
   }
 
   pub fn is_overflow(&self) -> bool {
-    self.is_overflow
+    self.used_count >= DEGREE - 1 || self.is_overflow
   }
 
   pub fn get_parent_offset(&self) -> u64 {

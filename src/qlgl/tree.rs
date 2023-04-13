@@ -69,7 +69,7 @@ impl<I: Index, V: Value> Tree<I,V> {
     let mut root = self.root.lock().unwrap();
     let mut node_file = self.node_file.lock().unwrap();
 
-    root.insert(&mut node_file, index, value).unwrap();
+    root.insert(&mut node_file, index, value)?;
 
     Ok(())
   }

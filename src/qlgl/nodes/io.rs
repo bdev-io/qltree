@@ -101,6 +101,7 @@ impl<I: Index, V: Value> Node<I,V> {
   pub fn write(&mut self, file: &mut File) -> Result<(), Box<std::io::Error>> {
     file.seek(SeekFrom::Start(self.offset))?;
     file.write_all(&self.to_bytes())?;
+    self.set_clean();
     Ok(())
   }
 }
