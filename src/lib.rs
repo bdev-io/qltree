@@ -6,50 +6,14 @@
     clippy::module_name_repetitions,
 )]
 #[macro_use] extern crate log;
-#[macro_use] extern crate pin_project;
 
-use std::path::PathBuf;
+pub(crate) const PAGE_SIZE: usize = 4096;
+pub(crate) const DEGREE: usize = 3;
 
-
-// -- lib.rs --
+pub trait Index where Self: Send + Sync + Clone + Copy + BytesExtension + std::cmp::PartialOrd {}
+pub trait Value where Self: Send + Sync + Clone + Copy + BytesExtension + std::cmp::PartialOrd {}
 
 mod qlgl;
 
+
 pub use qlgl::*;
-
-
-// -- lib.rs --
-
-
-
-#[allow(dead_code)]
-fn sync_test() -> Result<(), Box<dyn std::error::Error>> {
-  let path = PathBuf::from("/tmp/test");
-
-  // let config = qlgl::Config::new(path, 3);
-  // let mut tree = config.build::<i64, i64>();
-  // 
-  // tree.open()?;
-  // tree.set_params(Some(1_i64), Some("test"), Some(3));
-  // tree.insert(1, 2)?;
-  // tree.insert(2, 3)?;
-  // tree.insert(3, 4)?;
-  // tree.update(1, 4)?;
-  // tree.delete(1)?;
-  // tree.insert(1, 2)?;
-
-  Ok(())
-}
-
-#[cfg(all(test, feature = "sync"))]
-mod tests {
-  use super::*;
-
-  #[test]
-  fn it_works() {
-    assert!(sync_test().is_ok());
-  }
-}
-
-// #[cfg(all(test, feature = "async"))]
-
