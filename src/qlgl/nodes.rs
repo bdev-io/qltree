@@ -40,6 +40,15 @@ impl<I: IndexTrait, V: ValueTrait> AsMut<Node<I, V>> for Node<I, V> {
 
 impl<I: IndexTrait, V: ValueTrait> Clone for Node<I, V> {
   fn clone(&self) -> Self {
+
+    let mut keys: Vec<I> = Vec::with_capacity(self.keys.capacity());
+    let mut values: Vec<V> = Vec::with_capacity(self.values.capacity());
+    let mut children: Vec<u64> = Vec::with_capacity(self.children.capacity());
+
+    keys.extend_from_slice(&self.keys);
+    values.extend_from_slice(&self.values);
+    children.extend_from_slice(&self.children);
+
     Self {
       node_type: self.node_type,
       is_root: self.is_root,
@@ -49,9 +58,9 @@ impl<I: IndexTrait, V: ValueTrait> Clone for Node<I, V> {
       parent_offset: self.parent_offset,
       offset: self.offset,
 
-      keys: self.keys.clone(),
-      values: self.values.clone(),
-      children: self.children.clone(),
+      keys,
+      values,
+      children,
 
       phantom: std::marker::PhantomData,
     }
@@ -83,7 +92,7 @@ impl<I: IndexTrait, V:ValueTrait> std::fmt::Debug for Node<I, V> {
     f.debug_struct("Node")
       .field("node_type", match self.node_type {
         NodeType::Internal => &"Internal",
-        NodeType::Leaf(_, _) => &"Leaf",
+        NodeType::Leaf(_) => &"Leaf",
       })
       .field("is_root", &self.is_root)
       .field("is_dirty", &self.is_dirty)
@@ -115,9 +124,9 @@ impl<I: IndexTrait, V: ValueTrait> Node<I, V> {
     }
   }
 
-  pub fn make_leaf(degree: usize, prev_offset: Option<u64>, next_offset: Option<u64>) -> Self {
+  pub fn make_leaf(degree: usize, next_offset: Option<u64>) -> Self {
     Self {
-      node_type: NodeType::Leaf(prev_offset, next_offset),
+      node_type: NodeType::Leaf(next_offset),
       is_root: false,
       is_dirty: false,
       is_overflow: false,
@@ -133,9 +142,10 @@ impl<I: IndexTrait, V: ValueTrait> Node<I, V> {
 
   pub fn read_from_file(node_file: &File, offset: u64) -> Self {
     // TODO : 파일에서 특정 부분을 읽어서 노드를 생성해주어야함.
+    debug!("Read From File");
 
     Self {
-      node_type: NodeType::Leaf(None, None),
+      node_type: NodeType::Leaf(None),
       ..Default::default()
     }
   }
@@ -157,10 +167,11 @@ impl<I: IndexTrait, V: ValueTrait> Node<I, V> {
   }
 
   pub fn get_degree(&self) -> usize {
-    self.keys.capacity()
+    self.keys.capacity() + 1
   }
 
   pub fn is_full(&self) -> bool {
+    debug!("is_full : {} == {}", self.keys.len(), self.keys.capacity());
     self.keys.len() == self.keys.capacity()
   }
 
@@ -178,12 +189,13 @@ impl<I: IndexTrait, V:ValueTrait> Node<I, V> {
     let degree = self.get_degree();
     let index_size = I::get_size();
     let value_size = V::get_size();
+    let node_type_size = NodeType::get_size();
 
-    let common_size: usize = 24 + 1 + 3 + 8 + 8 + ((degree - 1) * index_size); // NOTE : node_type(24) + is_root(1) + padding(3) + parent_offset(8) + offset(8) + (degree - 1) * index_size
+    let common_size: usize = node_type_size + 1 + 3 + 8 + 8 + ((degree - 1) * index_size); // NOTE : node_type(16) + is_root(1) + padding(3) + parent_offset(8) + offset(8) + (degree - 1) * index_size
     if let NodeType::Internal = self.node_type {
       common_size + (degree * 8) // NOTE : degree * children_offset(8)
     } else {
-      common_size + (degree - 1) * value_size + 8 + 8 // NOTE : ((degree - 1) * value_size) + prev_offset(8) + next_offset(8)
+      common_size + (degree - 1) * value_size // NOTE : ((degree - 1) * value_size)
     }
   }
   // NOTE : byte_size
@@ -219,7 +231,7 @@ impl<I: IndexTrait, V:ValueTrait> Node<I, V> {
     }                                                         // TYPE : (degree - 1) * index_size byte
 
     // NOTE : 만약 Internal Node라면, Value는 존재하지 않는다.
-    if let NodeType::Leaf(_, _) = &self.node_type {
+    if let NodeType::Leaf(_) = &self.node_type {
       for i in 0..(degree - 1) {
         if i < self.values.len() {
           let raw = self.values[i].to_bytes();
@@ -238,8 +250,7 @@ impl<I: IndexTrait, V:ValueTrait> Node<I, V> {
           bytes.extend_from_slice(&0u64.to_be_bytes());
         }
       }                                                       // TYPE : degree * 8 byte
-    } else if let NodeType::Leaf(prev_offset, next_offset) = &self.node_type {
-        bytes.extend_from_slice(&prev_offset.unwrap_or(0).to_be_bytes());
+    } else if let NodeType::Leaf(next_offset) = &self.node_type {
         bytes.extend_from_slice(&next_offset.unwrap_or(0).to_be_bytes());
       }
 
@@ -278,6 +289,7 @@ impl<I: IndexTrait, V:ValueTrait> Node<I, V> {
   }
 
   pub fn insert_full(&mut self, file: &mut File, key: I, value: V) -> Result<()> {
+    debug!("{:?}", self);
     todo!("꽉 차있어서 분할이 필요함");
     Ok(())
   }
@@ -288,11 +300,15 @@ impl<I: IndexTrait, V:ValueTrait> Node<I, V> {
   }
 
   pub fn insert_search_node(&mut self, file: &mut File, key: I) -> Result<Box<Node<I, V>>> {
-    if matches!(self.node_type, NodeType::Leaf(_, _)) {
+    debug!("INSERT SEARCH NODE (OFFSET: {}), kc: {}", self.offset, self.keys.capacity());
+    if matches!(self.node_type, NodeType::Leaf(_)) {
       return Ok(Box::new(self.clone()));
     }
 
     if matches!(self.node_type, NodeType::Internal) {
+      if self.is_root {
+        return Ok(Box::new(self.clone()));
+      }
       let mut index = 0;
       for i in 0..self.keys.len() {
         if key < self.keys[i] {
@@ -310,9 +326,22 @@ impl<I: IndexTrait, V:ValueTrait> Node<I, V> {
     }
   }
 
+  pub fn insert_kv(&mut self, file: &mut File, key: I, value: V) -> Result<()> {
+    debug!("INSERT_KV: {:?}\n{}", self, self.keys.capacity());
+    if self.is_full() {
+      self.insert_full(file, key, value)?;
+    } else {
+      self.insert_non_full(file, key, value)?;
+    }
+    Ok(())
+  }
+
   pub fn insert(&mut self, file: &mut File, key: I, value: V) -> Result<()> {
     if self.is_root {
-      let insert_node: Box<Node<I, V>> = self.insert_search_node(file, key)?;
+      let mut target_node: Box<Node<I, V>> = self.insert_search_node(file, key)?;
+      target_node.insert_kv(file, key, value)?;
+
+      todo!("노드에 키와 값 삽입.");
     }
 
     todo!("노드에 키와 값 삽입.");

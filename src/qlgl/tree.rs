@@ -63,14 +63,17 @@ impl<I: IndexTrait, V:ValueTrait> Default for Tree<I, V> {
 impl<I: IndexTrait, V: ValueTrait> Tree<I, V> {
   pub fn new(base_path: PathBuf, node_name: &str, degree: usize) -> Self {
 
-    let mut root = Node::<I, V>::make_leaf(degree, None, None);
+    let degree = degree * 2 - 1;
+
+    let mut root = Node::<I, V>::make_internal(degree);
     root.set_root();
     root.set_dirty();
+    debug!("Root Node Created: {:?}, kc: {}", root, root.keys.capacity());
 
     Self {
       base_path,
       node_name: node_name.to_string(),
-      degree: degree * 2 - 1,
+      degree,
       root: Arc::new(Mutex::new(root)),
       phantom: PhantomData,
       node_file: None,
@@ -95,11 +98,11 @@ impl<I: IndexTrait, V: ValueTrait> Tree<I, V> {
     if self.node_file.is_none() {
       if node_path.exists() {
         let node_file = OpenOptions::new().write(true).read(true).append(true).open(node_path).unwrap();
-        let root = self.root.lock().unwrap();
+        let _root = self.root.lock().unwrap();
         // root.read_from_file(&mut node_file, 0_u64).unwrap();
         self.node_file = Some(Arc::new(node_file));
       } else {
-        debug!("File Not Exists, Crate New One");
+        debug!("File Not Exists, Create New One");
         let node_file = OpenOptions::new().write(true).read(true).create(true).open(node_path).unwrap();
         self.node_file = Some(Arc::new(node_file));
       }
