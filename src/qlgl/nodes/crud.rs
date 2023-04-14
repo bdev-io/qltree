@@ -69,6 +69,7 @@ impl<I: Index, V: Value> Node<I,V> {
     let target_index = new_right_node.keys[0];
 
     self.node_type = NodeType::Internal;
+    self.set_used_count(1);
     self.keys = Vec::with_capacity(DEGREE - 1);
     self.keys.push(target_index);
     self.values = Vec::with_capacity(DEGREE - 1);
