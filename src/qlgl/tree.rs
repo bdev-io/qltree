@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use std::fs::{ File, OpenOptions };
-use std::io::Read;
+use std::io::{Read, Seek, SeekFrom};
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::{ Arc, Mutex };
@@ -23,6 +23,7 @@ impl<I: Index, V: Value> Tree<I,V> {
     let file_path = base_path.join("tree.ql");
 
     let mut node_file = if !file_path.exists() {
+      debug!("MAKE FILE");
       let mut node_file = OpenOptions::new()
         .read(true)
         .write(true)
@@ -37,6 +38,7 @@ impl<I: Index, V: Value> Tree<I,V> {
       root.set_leaf(None);
       root.set_parent_offset(0);
       root.write(&mut node_file).unwrap();
+      node_file.sync_all().unwrap();
 
       node_file
     } else {
@@ -48,14 +50,8 @@ impl<I: Index, V: Value> Tree<I,V> {
       node_file
     };
 
-    let mut root = Node::<I, V>::new();
-    root.set_offset(0);
-
-    let mut bufs: Vec<u8> = vec![0; Node::<I, V>::get_byte_size()];
-    node_file.read_exact(&mut bufs).unwrap();
-
-    root.from_bytes(bufs).unwrap();
-
+    let root = Node::<I, V>::read(&mut node_file, 0).unwrap();
+    debug!("Read Root From File: {:#?}", root);
 
     Self {
       node_name: node_name.to_string(),
@@ -69,7 +65,10 @@ impl<I: Index, V: Value> Tree<I,V> {
     let mut root = self.root.lock().unwrap();
     let mut node_file = self.node_file.lock().unwrap();
 
+    debug!("BEFORE INSERT(i:{:?}) {:#?}", index, root);
     root.insert(&mut node_file, index, value)?;
+    root.write(&mut node_file).unwrap();
+    debug!("AFTER INSERT {:#?}", root);
 
     Ok(())
   }

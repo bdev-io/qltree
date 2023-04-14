@@ -24,7 +24,7 @@ impl BytesExtension for NodeType {
         let mut bytes: Vec<u8> = vec![0u8; 16];
         bytes[0..8].copy_from_slice(&(2u64.to_be_bytes()));
         bytes[8..16].copy_from_slice(&(next.unwrap_or(0u64).to_be_bytes()));
-        debug!("BYTES_SIZE: {}", bytes.len());
+        // debug!("BYTES_SIZE: {}", bytes.len());
         bytes
       }
     }
@@ -33,7 +33,7 @@ impl BytesExtension for NodeType {
     let node_type = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
     let next_offset = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
 
-    debug!("node_type: {}, next_offset: {}", node_type, next_offset);
+    // debug!("node_type: {}, next_offset: {}", node_type, next_offset);
 
     match node_type {
       1 => Ok(NodeType::Internal),
@@ -46,7 +46,7 @@ impl BytesExtension for NodeType {
     let node_type = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
     let next_offset = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
 
-    debug!("node_type: {}, next_offset: {}", node_type, next_offset);
+    // debug!("node_type: {}, next_offset: {}", node_type, next_offset);
 
     match node_type {
       1 => {

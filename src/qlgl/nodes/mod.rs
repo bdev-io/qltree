@@ -39,6 +39,7 @@ impl<I: Index, V: Value> std::fmt::Debug for Node<I, V> {
       .field("parent_offset", &self.parent_offset)
       .field("offset", &self.offset)
       .field("used_count", &self.used_count)
+      .field("KEYS", &(self.keys.as_slice()))
       .finish()
   }
 }

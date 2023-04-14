@@ -7,11 +7,15 @@
 )]
 #[macro_use] extern crate log;
 
-pub(crate) const PAGE_SIZE: usize = 4096;
-pub(crate) const DEGREE: usize = 3;
+// NOTE : 트리의 차수를 여기서 정의
+const DEGREE_YOU_WANT: usize = 2;
 
-pub trait Index where Self: Send + Sync + Clone + Copy + BytesExtension + std::cmp::PartialOrd {}
-pub trait Value where Self: Send + Sync + Clone + Copy + BytesExtension + std::cmp::PartialOrd {}
+
+pub(crate) const PAGE_SIZE: usize = 4096;
+pub(crate) const DEGREE: usize = (DEGREE_YOU_WANT * 2) - 1;
+
+pub trait Index where Self: Send + Sync + Clone + Copy + BytesExtension + std::fmt::Debug + Default + std::cmp::PartialOrd {}
+pub trait Value where Self: Send + Sync + Clone + Copy + BytesExtension + std::fmt::Debug + Default + std::cmp::PartialOrd {}
 
 mod qlgl;
 

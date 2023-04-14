@@ -5,6 +5,7 @@ use std::io::{SeekFrom, Seek};
 impl<I: Index, V: Value> Node<I,V> {
 
   pub fn insert_kv(&mut self, index: I, value: V) -> Result<(), String> {
+    // debug!("BEFORE INSERT {:#?}", self);
     let mut i = 0;
     for kidx in 0..self.keys.len() {
       if index < self.keys[kidx] {
@@ -14,36 +15,28 @@ impl<I: Index, V: Value> Node<I,V> {
     }
 
     self.set_dirty();
+    // debug!("INSERT_CAPACITY: {}, AT: {}",self.keys.capacity(), i);
     self.keys.insert(i, index);
     self.values.insert(i, value);
     self.increase_count();
+    // debug!("AFTER INSERT {:#?}\n\n", self);
     Ok(())
   }
+
   pub fn insert(&mut self, node_file: &mut File, index: I, value: V) -> Result<(), String> {
-    // debug!("{:#?}", self);
+    // debug!("INDEX: {:?} VALUE: {:?}", index, value);
 
-    // B+ Tree
-    // 1. 루트 노드가 리프 노드인지 확인
-    // 2. 리프 노드라면, 리프 노드에 삽입
-    // 3. 리프 노드가 아니라면, 리프 노드를 찾아서 삽입
-    // 4. 리프 노드가 오버플로우 되었다면, 리프 노드를 분할
-    // 5. 리프 노드가 오버플로우 되지 않았다면, 삽입 완료
-    // 6. 리프 노드가 분할되었다면, 부모 노드에 삽입
-    // 7. 부모 노드가 오버플로우 되었다면, 부모 노드를 분할
-    // 8. 부모 노드가 오버플로우 되지 않았다면, 삽입 완료
-    // 9. 부모 노드가 분할되었다면, 부모 노드의 부모 노드에 삽입
-    // 10. 부모 노드의 부모 노드가 오버플로우 되었다면, 부모 노드의 부모 노드를 분할
-    // 11. 부모 노드의 부모 노드가 오버플로우 되지 않았다면, 삽입 완료
-    // 12. 부모 노드의 부모 노드가 분할되었다면, 부모 노드의 부모 노드의 부모 노드에 삽입
-
-    let mut node: Box<&mut Self> = self.search_node(index).unwrap();
+    let node_offset = self.search_node(node_file, index).unwrap();
+    let mut node = Self::read(node_file, node_offset).unwrap();
 
     node.insert_kv(index, value)?;
     if node.is_overflow() {
       node.split_node(node_file, None)?;
     }
+    node.write(node_file).unwrap();
 
     node.write(node_file).unwrap();
+    // debug!("INSERTED.");
     Ok(())
   }
 
@@ -85,6 +78,8 @@ impl<I: Index, V: Value> Node<I,V> {
 
     self.write(node_file).unwrap();
 
+    debug!("Split Node: {:#?}", self);
+
     if !self.is_root {
       panic!("Parent 노드로 올라가서 삽입");
     }
@@ -93,12 +88,26 @@ impl<I: Index, V: Value> Node<I,V> {
 
   }
 
-  pub fn search_node(&mut self, index: I) -> Result<Box<&mut Self>, String> {
+  pub fn search_node(&mut self, node_file: &mut File, index: I) -> Result<u64, String> {
     if matches!(self.node_type, NodeType::Leaf(_)) {
-      return Ok(Box::new(self));
+      return Ok(self.get_offset());
     }
 
-    Err("Not implemented".to_string())
+    let mut i: usize = 0;
+    for i in 0..self.keys.len() {
+      if index < self.keys[i] {
+        break;
+      }
+    }
+
+    if i == self.keys.len() {
+      i -= 1;
+    }
+
+    let child_offset = self.children[i];
+
+    let mut child_node = Self::read(node_file, child_offset).unwrap();
+    Ok(child_node.search_node(node_file, index).unwrap())
   }
 
 }

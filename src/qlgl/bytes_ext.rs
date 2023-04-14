@@ -7,6 +7,7 @@ pub trait BytesExtension where Self: Sized {
   fn new_from_bytes(bytes: Vec<u8>) -> Result<Self, String>;
 }
 
+
 impl BytesExtension for bool {
   fn get_byte_size() -> usize {
     1

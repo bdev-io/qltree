@@ -1,5 +1,10 @@
 use super::*;
 
+impl<I: Index, V: Value> Default for Node<I, V> {
+  fn default() -> Self {
+    Self::new()
+  }
+}
 
 impl<I: Index, V: Value> Node<I, V> {
   pub fn new() -> Self {
@@ -55,7 +60,7 @@ impl<I: Index, V: Value> Node<I, V> {
 
   pub fn set_overflow(&mut self) {
     self.set_dirty();
-    self.is_overflow = self.used_count >= DEGREE - 1 || self.is_overflow;
+    self.is_overflow = self.used_count >= DEGREE || self.is_overflow;
   }
 
   pub fn is_root(&self) -> bool {
@@ -67,7 +72,7 @@ impl<I: Index, V: Value> Node<I, V> {
   }
 
   pub fn is_overflow(&self) -> bool {
-    self.used_count >= DEGREE - 1 || self.is_overflow
+    self.used_count >= DEGREE || self.is_overflow
   }
 
   pub fn get_parent_offset(&self) -> u64 {

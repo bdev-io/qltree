@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{SeekFrom, Seek, Write};
+use std::io::{SeekFrom, Seek, Write, Read};
 
 use crate::PAGE_SIZE;
 
@@ -68,6 +68,9 @@ impl<I: Index, V: Value> BytesExtension for Node<I, V> {
     let offset = u64::new_from_bytes(bytes[cursor..cursor + u64::get_byte_size()].to_vec())?;
     cursor += u64::get_byte_size();
 
+    let used_count = usize::new_from_bytes(bytes[cursor..cursor + usize::get_byte_size()].to_vec())?;
+    cursor += usize::get_byte_size();
+
     let keys = Vec::<I>::new_from_bytes(bytes[cursor..cursor + Vec::<I>::get_byte_size()].to_vec())?;
     cursor += Vec::<I>::get_byte_size();
 
@@ -83,9 +86,15 @@ impl<I: Index, V: Value> BytesExtension for Node<I, V> {
     self.is_overflow = is_overflow;
     self.parent_offset = parent_offset;
     self.offset = offset;
+    self.used_count = used_count;
+
     self.keys = keys;
     self.values = values;
     self.children = children;
+
+    self.keys.resize(self.used_count, I::default());
+    self.values.resize(self.used_count, V::default());
+    self.children.resize(self.used_count + 1, 0);
 
     Ok(())
   }
@@ -100,8 +109,22 @@ impl<I: Index, V: Value> BytesExtension for Node<I, V> {
 impl<I: Index, V: Value> Node<I,V> {
   pub fn write(&mut self, file: &mut File) -> Result<(), Box<std::io::Error>> {
     file.seek(SeekFrom::Start(self.offset))?;
-    file.write_all(&self.to_bytes())?;
+    let data = self.to_bytes();
+    // debug!("LEN: {}", data.len());
+    file.write_all(&data)?;
+    file.sync_all().unwrap();
     self.set_clean();
     Ok(())
+  }
+
+  pub fn read(file: &mut File, offset: u64) -> Result<Self, Box<std::io::Error>> {
+    file.seek(SeekFrom::Start(offset))?;
+
+    let mut data = vec![0; Self::get_byte_size()];
+    file.read_exact(&mut data)?;
+
+    let mut node = Self::new_from_bytes(data).unwrap();
+    node.offset = offset;
+    Ok(node)
   }
 }
